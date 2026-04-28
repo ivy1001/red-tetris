@@ -9,6 +9,7 @@ import type {
 interface GameSliceState {
   status: GameStatus;
   isAlive: boolean;
+  score: number;
   board: number[][];
   currentPiece: CurrentPieceDto | null;
   opponents: OpponentSummary[];
@@ -20,6 +21,7 @@ const emptyBoard = (): number[][] =>
 const initialState: GameSliceState = {
   status: 'idle',
   isAlive: false,
+  score: 0,
   board: emptyBoard(),
   currentPiece: null,
   opponents: [],
@@ -32,6 +34,7 @@ const gameSlice = createSlice({
     setGameState: (state, action: PayloadAction<GameStatePayload>) => {
       state.status = action.payload.status;
       state.isAlive = action.payload.isAlive;
+      state.score = action.payload.score;
       state.board = action.payload.board;
       state.currentPiece = action.payload.currentPiece;
       state.opponents = action.payload.opponents;

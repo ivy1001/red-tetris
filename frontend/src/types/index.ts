@@ -21,6 +21,7 @@ export interface OpponentSummary {
   name: string;
   isAlive: boolean;
   spectrum: number[];
+  score: number;
 }
 
 export interface CurrentPieceDto {
@@ -43,6 +44,7 @@ export interface RoomStatePayload {
 export interface GameStatePayload {
   status: GameStatus;
   isAlive: boolean;
+  score: number;
   board: number[][];
   currentPiece: CurrentPieceDto | null;
   opponents: OpponentSummary[];

@@ -39,18 +39,25 @@ export const Board: FC = () => {
 
   return (
     <div className={`board-frame${isAlive ? '' : ' dead'}`}>
-      <div className="board">
-        {grid.map((row, r) =>
-          row.map((cell, c) => (
-            <Cell
-              key={`${r}-${c}`}
-              value={cell}
-              active={activeCells.has(`${r}-${c}`)}
-            />
-          )),
-        )}
+      <div className="board-frame-inner">
+        <div className="board">
+          {grid.map((row, r) =>
+            row.map((cell, c) => (
+              <Cell
+                key={`${r}-${c}`}
+                value={cell}
+                active={activeCells.has(`${r}-${c}`)}
+              />
+            )),
+          )}
+        </div>
       </div>
-      {!isAlive && <div className="board-overlay">eliminated</div>}
+      {!isAlive && (
+        <div className="board-overlay">
+          <span className="overlay-glyph">×</span>
+          <span>eliminated</span>
+        </div>
+      )}
     </div>
   );
 };

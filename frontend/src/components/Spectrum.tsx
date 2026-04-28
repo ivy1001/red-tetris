@@ -11,6 +11,9 @@ export const Spectrum: FC<SpectrumProps> = ({ opponent }) => (
       <span className={`spec-dot${opponent.isAlive ? '' : ' off'}`} />
       <span className="spec-name">{opponent.name}</span>
       {!opponent.isAlive && <span className="spec-tag">DOWN</span>}
+      <span className="spec-score" title="score">
+        {opponent.score.toLocaleString()}
+      </span>
     </div>
     <div className="spec-bars">
       {opponent.spectrum.map((h, i) => (

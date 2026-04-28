@@ -18,6 +18,12 @@ import {
 const DEFAULT_TICK_MS = 500;
 const INITIAL_SEQUENCE_SIZE = 50;
 
+// Standard Tetris-style scoring: classic NES values for line clears,
+// 1 pt per soft-dropped row, 2 pts per hard-dropped row.
+const LINE_CLEAR_SCORE = [0, 100, 300, 500, 800] as const;
+const SOFT_DROP_POINTS = 1;
+const HARD_DROP_POINTS_PER_ROW = 2;
+
 export class Game {
   roomName: string;
   players: Player[];
@@ -221,6 +227,7 @@ export class Game {
     if (this.canPlace(player.board, next)) {
       player.currentPiece = next;
       player.touchingGround = false;
+      player.score += SOFT_DROP_POINTS;
     } else if (player.touchingGround) {
       this.lockPiece(player);
     } else {
@@ -231,10 +238,13 @@ export class Game {
   private hardDrop(player: Player): void {
     if (!player.currentPiece) return;
     let piece = player.currentPiece;
+    let rowsDropped = 0;
     while (this.canPlace(player.board, piece.moved(0, 1))) {
       piece = piece.moved(0, 1);
+      rowsDropped += 1;
     }
     player.currentPiece = piece;
+    player.score += rowsDropped * HARD_DROP_POINTS_PER_ROW;
     this.lockPiece(player);
   }
 
@@ -278,6 +288,11 @@ export class Game {
     }
 
     const cleared = this.clearLines(player.board);
+
+    if (cleared > 0) {
+      const idx = Math.min(cleared, LINE_CLEAR_SCORE.length - 1);
+      player.score += LINE_CLEAR_SCORE[idx];
+    }
 
     if (cleared > 1) {
       const penalty = cleared - 1;
@@ -429,11 +444,13 @@ export class Game {
         name: p.name,
         isAlive: p.isAlive,
         spectrum: p.getSpectrum(),
+        score: p.score,
       }));
 
     return {
       status: this.status,
       isAlive: player.isAlive,
+      score: player.score,
       board: player.board.map((row) => [...row]),
       currentPiece: player.currentPiece
         ? {

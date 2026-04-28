@@ -14,6 +14,7 @@ export class Player {
   currentPiece: Piece | null;
   pieceIndex: number;
   touchingGround: boolean;
+  score: number;
 
   constructor(id: string, name: string, isHost = false) {
     this.id = id;
@@ -24,6 +25,7 @@ export class Player {
     this.currentPiece = null;
     this.pieceIndex = 0;
     this.touchingGround = false;
+    this.score = 0;
   }
 
   static emptyBoard(): number[][] {
@@ -38,6 +40,7 @@ export class Player {
     this.pieceIndex = 0;
     this.touchingGround = false;
     this.isAlive = false;
+    this.score = 0;
   }
 
   getSpectrum(): number[] {

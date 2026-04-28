@@ -34,6 +34,7 @@ export const GamePage: FC = () => {
   const status = useAppSelector((s) => s.game.status);
   const error = useAppSelector((s) => s.room.error);
   const opponents = useAppSelector((s) => s.game.opponents);
+  const score = useAppSelector((s) => s.game.score);
 
   useEffect(() => {
     if (!room || !playerName) return;
@@ -76,6 +77,14 @@ export const GamePage: FC = () => {
             <span className="chip-key">you</span>
             <span className="chip-val">{playerName}</span>
           </span>
+          {status === 'playing' && (
+            <span className="chip score-chip">
+              <span className="chip-key">score</span>
+              <span className="chip-val score-num">
+                {score.toLocaleString()}
+              </span>
+            </span>
+          )}
           <span className={`chip status status-${status}`}>
             <span className="chip-key">status</span>
             <span className="chip-val">{STATUS_LABELS[status] ?? status}</span>
@@ -122,10 +131,22 @@ export const GamePage: FC = () => {
 
       {status === 'playing' && (
         <footer className="controls-hint">
-          <kbd>←</kbd><kbd>→</kbd><span>move</span>
-          <kbd>↑</kbd><span>rotate</span>
-          <kbd>↓</kbd><span>soft drop</span>
-          <kbd>space</kbd><span>hard drop</span>
+          <span className="hint-group">
+            <kbd>←</kbd><kbd>→</kbd>
+            <span>move</span>
+          </span>
+          <span className="hint-group">
+            <kbd>↑</kbd>
+            <span>rotate</span>
+          </span>
+          <span className="hint-group">
+            <kbd>↓</kbd>
+            <span>soft drop</span>
+          </span>
+          <span className="hint-group">
+            <kbd>space</kbd>
+            <span>hard drop</span>
+          </span>
         </footer>
       )}
     </div>

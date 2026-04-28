@@ -17,15 +17,23 @@ export const Lobby: FC = () => {
 
   return (
     <div className="lobby">
-      <h2>Room: {roomName}</h2>
-      <p className="muted">
-        Waiting for the host to start the game…
-      </p>
+      <div className="lobby-head">
+        <span className="lobby-eyebrow">ROOM</span>
+        <h2 className="lobby-title">{roomName}</h2>
+        <p className="lobby-sub">
+          {isHost
+            ? 'You are the host. Press start when ready.'
+            : 'Waiting for the host to start the game…'}
+        </p>
+      </div>
 
-      <h3>Players</h3>
+      <h3 className="section-title">Players · {players.length}</h3>
       <ul className="player-list">
         {players.map((p) => (
-          <li key={p.id}>
+          <li key={p.id} className={p.name === playerName ? 'is-me' : ''}>
+            <span className={`avatar${p.isHost ? ' host' : ''}`}>
+              {p.name.charAt(0).toUpperCase()}
+            </span>
             <span className="name">{p.name}</span>
             {p.isHost && <span className="badge host">HOST</span>}
             {p.name === playerName && <span className="badge me">YOU</span>}
@@ -39,7 +47,9 @@ export const Lobby: FC = () => {
           start_game
         </button>
       ) : (
-        <p className="muted small">Only the host can start.</p>
+        <p className="muted small center">
+          Only the host can start the round.
+        </p>
       )}
     </div>
   );
