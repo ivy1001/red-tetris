@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Red Tetris — Socket Test</title>
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+  <style>
+    :root {
+      --bg: #0e0f12;
+      --panel: #161922;
+      --border: #2a2f3d;
+      --text: #e6e8ee;
+      --muted: #8b94a7;
+      --accent: #ff5b6e;
+      --good: #6dd58c;
+      --bad: #ff7676;
+      --warn: #f7c948;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      padding: 10px 16px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    h1 { font-size: 14px; margin: 0; letter-spacing: 1px; color: var(--accent); }
+    .status { font-size: 12px; color: var(--muted); }
+    .status.connected { color: var(--good); }
+    .status.disconnected { color: var(--bad); }
+    main {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 12px;
+      padding: 12px;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+    }
+    .panel h2 {
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 8px 0;
+    }
+    label { display: block; font-size: 11px; color: var(--muted); margin: 6px 0 2px; }
+    input, button {
+      font-family: inherit;
+      font-size: 12px;
+      background: #0b0c10;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 8px;
+      border-radius: 4px;
+      width: 100%;
+    }
+    button {
+      cursor: pointer;
+      transition: background 0.1s, border 0.1s;
+    }
+    button:hover:not(:disabled) { border-color: var(--accent); }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
+    .btn-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 6px; }
+    .kv { display: grid; grid-template-columns: 90px 1fr; gap: 4px; font-size: 11px; }
+    .kv .k { color: var(--muted); }
+    .kv .v { color: var(--text); word-break: break-all; }
+    .pill {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 8px;
+      font-size: 10px;
+      background: #0b0c10;
+      border: 1px solid var(--border);
+    }
+    .pill.host { color: var(--warn); border-color: var(--warn); }
+    .pill.alive { color: var(--good); border-color: var(--good); }
+    .pill.dead { color: var(--bad); border-color: var(--bad); }
+
+    /* Board */
+    .board {
+      display: grid;
+      grid-template-columns: repeat(10, 20px);
+      grid-template-rows: repeat(20, 20px);
+      gap: 1px;
+      background: var(--border);
+      padding: 1px;
+      width: max-content;
+    }
+    .cell {
+      background: #07080a;
+      width: 20px;
+      height: 20px;
+    }
+    .cell.c1 { background: #00d4ff; }
+    .cell.c2 { background: #f7c948; }
+    .cell.c3 { background: #c065d6; }
+    .cell.c4 { background: #6dd58c; }
+    .cell.c5 { background: #ff5b6e; }
+    .cell.c6 { background: #4a7dff; }
+    .cell.c7 { background: #ff9f43; }
+    .cell.c8 { background: #555; } /* penalty */
+    .cell.ghost { box-shadow: inset 0 0 0 2px #ffffff77; }
+
+    /* Spectrum view */
+    .spectrum {
+      display: grid;
+      grid-template-columns: repeat(10, 8px);
+      gap: 1px;
+      align-items: end;
+      height: 80px;
+      padding: 1px;
+      background: var(--border);
+    }
+    .spec-col {
+      background: var(--accent);
+      width: 8px;
+    }
+    .opponent {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      border-bottom: 1px dashed var(--border);
+    }
+    .opponent:last-child { border-bottom: none; }
+
+    /* Event log */
+    .log {
+      background: #07080a;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 6px 8px;
+      font-size: 11px;
+      max-height: 480px;
+      overflow-y: auto;
+      line-height: 1.5;
+    }
+    .log .entry { white-space: pre-wrap; word-break: break-all; }
+    .log .ts { color: var(--muted); margin-right: 6px; }
+    .log .ev { color: var(--accent); margin-right: 6px; font-weight: bold; }
+    .log .entry.error .ev { color: var(--bad); }
+    .log .entry.system .ev { color: var(--warn); }
+
+    .game-area { display: flex; gap: 16px; flex-wrap: wrap; }
+    .help {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>RED TETRIS · SOCKET PROBE</h1>
+    <span id="status" class="status disconnected">disconnected</span>
+    <span id="server-url" class="status">–</span>
+  </header>
+
+  <main>
+    <!-- LEFT PANEL: controls -->
+    <section>
+      <div class="panel">
+        <h2>Connection</h2>
+        <label>Server URL</label>
+        <input id="server" value="http://localhost:3001" />
+        <div class="btn-row">
+          <button id="connectBtn">Connect</button>
+          <button id="disconnectBtn" disabled>Disconnect</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Join</h2>
+        <label>Room</label>
+        <input id="roomName" value="lobby-1" />
+        <label>Player name</label>
+        <input id="playerName" value="alice" />
+        <div class="btn-row">
+          <button id="joinBtn" disabled>join_room</button>
+          <button id="leaveBtn" disabled>disconnect</button>
+        </div>
+        <div class="kv" style="margin-top:8px">
+          <span class="k">socket id</span><span class="v" id="socketId">–</span>
+          <span class="k">room</span><span class="v" id="currentRoom">–</span>
+          <span class="k">role</span><span class="v" id="currentRole">–</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Game control (host only on socket flow)</h2>
+        <div class="btn-row">
+          <button id="startBtn" disabled>start_game</button>
+          <button id="restartBtn" disabled>restart_game</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Player input</h2>
+        <div class="btn-grid">
+          <button class="input-btn" data-input="left" disabled>← left</button>
+          <button class="input-btn" data-input="rotate" disabled>↑ rotate</button>
+          <button class="input-btn" data-input="right" disabled>right →</button>
+          <button class="input-btn" data-input="soft_drop" disabled>↓ soft</button>
+          <button class="input-btn" data-input="hard_drop" disabled>␣ hard</button>
+          <span></span>
+        </div>
+        <div class="help">
+          Keyboard: ← → ↑ ↓ + space (when this tab is focused and you've joined a room).
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL: game state + log -->
+    <section>
+      <div class="panel">
+        <h2>My board</h2>
+        <div class="game-area">
+          <div id="board" class="board"></div>
+          <div style="flex:1; min-width: 240px;">
+            <div class="kv">
+              <span class="k">status</span><span class="v" id="gStatus">–</span>
+              <span class="k">isAlive</span><span class="v" id="gAlive">–</span>
+              <span class="k">piece</span><span class="v" id="gPiece">–</span>
+              <span class="k">winner</span><span class="v" id="gWinner">–</span>
+            </div>
+            <h2 style="margin-top:14px">Players in room</h2>
+            <div id="players"></div>
+            <h2 style="margin-top:14px">Opponents (spectrum)</h2>
+            <div id="opponents"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>
+          Event log
+          <button id="clearLogBtn" style="float:right; width:auto; padding:1px 8px; font-size:10px;">clear</button>
+        </h2>
+        <div id="log" class="log"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ────────────────────────────────────────────────
+    // State
+    // ────────────────────────────────────────────────
+    let socket = null;
+    let lastGameState = null;
+    let myName = null;
+    let myRoom = null;
+
+    const $ = (id) => document.getElementById(id);
+    const ROWS = 20;
+    const COLS = 10;
+
+    // Build the empty board grid once
+    const boardEl = $('board');
+    const cellEls = [];
+    for (let r = 0; r < ROWS; r++) {
+      cellEls[r] = [];
+      for (let c = 0; c < COLS; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        boardEl.appendChild(cell);
+        cellEls[r][c] = cell;
+      }
+    }
+
+    // ────────────────────────────────────────────────
+    // Logging
+    // ────────────────────────────────────────────────
+    function log(event, payload, kind = '') {
+      const el = $('log');
+      const entry = document.createElement('div');
+      entry.className = `entry ${kind}`;
+      const ts = new Date().toLocaleTimeString();
+      const body =
+        payload === undefined ? ''
+        : typeof payload === 'string' ? payload
+        : JSON.stringify(payload, replacer, 2);
+      entry.innerHTML =
+        `<span class="ts">${ts}</span>` +
+        `<span class="ev">${event}</span>` +
+        `<span>${escapeHtml(body)}</span>`;
+      el.appendChild(entry);
+      el.scrollTop = el.scrollHeight;
+    }
+    function escapeHtml(s) {
+      return String(s)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;');
+    }
+    // Avoid logging the giant board on every tick
+    function replacer(key, value) {
+      if (key === 'board' && Array.isArray(value)) return `<board ${value.length}x${value[0]?.length || 0}>`;
+      if (key === 'matrix' && Array.isArray(value)) return `<matrix>`;
+      return value;
+    }
+
+    $('clearLogBtn').onclick = () => { $('log').innerHTML = ''; };
+
+    // ────────────────────────────────────────────────
+    // Connect / disconnect
+    // ────────────────────────────────────────────────
+    $('connectBtn').onclick = () => {
+      const url = $('server').value.trim();
+      if (!url) return;
+      $('server-url').textContent = url;
+      socket = io(url, { transports: ['websocket', 'polling'] });
+
+      socket.on('connect', () => {
+        $('status').textContent = 'connected';
+        $('status').className = 'status connected';
+        $('socketId').textContent = socket.id;
+        $('connectBtn').disabled = true;
+        $('disconnectBtn').disabled = false;
+        $('joinBtn').disabled = false;
+        log('connect', { id: socket.id }, 'system');
+      });
+
+      socket.on('disconnect', (reason) => {
+        $('status').textContent = 'disconnected';
+        $('status').className = 'status disconnected';
+        log('disconnect', { reason }, 'system');
+        resetUI();
+      });
+
+      socket.on('connect_error', (err) => {
+        log('connect_error', { message: err.message }, 'error');
+      });
+
+      // Server → Client events from the spec
+      socket.on('room_state', (data) => {
+        log('room_state', data);
+        applyRoomState(data);
+      });
+      socket.on('game_state', (data) => {
+        log('game_state', data);
+        applyGameState(data);
+      });
+      socket.on('game_started', (data) => log('game_started', data, 'system'));
+      socket.on('game_over', (data) => log('game_over', data, 'system'));
+      socket.on('host_changed', (data) => log('host_changed', data, 'system'));
+      socket.on('error_event', (data) => log('error_event', data, 'error'));
+    };
+
+    $('disconnectBtn').onclick = () => {
+      socket?.disconnect();
+    };
+
+    function resetUI() {
+      $('connectBtn').disabled = false;
+      $('disconnectBtn').disabled = true;
+      $('joinBtn').disabled = true;
+      $('startBtn').disabled = true;
+      $('restartBtn').disabled = true;
+      $('socketId').textContent = '–';
+      $('currentRoom').textContent = '–';
+      $('currentRole').textContent = '–';
+      document.querySelectorAll('.input-btn').forEach((b) => (b.disabled = true));
+    }
+
+    // ────────────────────────────────────────────────
+    // Room actions
+    // ────────────────────────────────────────────────
+    $('joinBtn').onclick = () => {
+      const roomName = $('roomName').value.trim();
+      const playerName = $('playerName').value.trim();
+      if (!roomName || !playerName) return;
+      myRoom = roomName;
+      myName = playerName;
+      socket.emit('join_room', { roomName, playerName });
+      log('→ join_room', { roomName, playerName });
+      $('currentRoom').textContent = roomName;
+      $('startBtn').disabled = false;
+      $('restartBtn').disabled = false;
+      document.querySelectorAll('.input-btn').forEach((b) => (b.disabled = false));
+    };
+
+    $('startBtn').onclick = () => {
+      socket.emit('start_game', { roomName: myRoom });
+      log('→ start_game', { roomName: myRoom });
+    };
+
+    $('restartBtn').onclick = () => {
+      socket.emit('restart_game', { roomName: myRoom });
+      log('→ restart_game', { roomName: myRoom });
+    };
+
+    document.querySelectorAll('.input-btn').forEach((btn) => {
+      btn.onclick = () => sendInput(btn.dataset.input);
+    });
+
+    function sendInput(input) {
+      if (!socket || !myRoom) return;
+      socket.emit('player_input', { roomName: myRoom, input });
+      log('→ player_input', { input });
+    }
+
+    // Keyboard bindings
+    document.addEventListener('keydown', (e) => {
+      if (!socket || !myRoom) return;
+      const tag = (e.target?.tagName || '').toLowerCase();
+      if (tag === 'input') return;
+      let input = null;
+      switch (e.key) {
+        case 'ArrowLeft':  input = 'left'; break;
+        case 'ArrowRight': input = 'right'; break;
+        case 'ArrowUp':    input = 'rotate'; break;
+        case 'ArrowDown':  input = 'soft_drop'; break;
+        case ' ':          input = 'hard_drop'; break;
+      }
+      if (input) {
+        e.preventDefault();
+        sendInput(input);
+      }
+    });
+
+    // ────────────────────────────────────────────────
+    // Renderers
+    // ────────────────────────────────────────────────
+    function applyRoomState(state) {
+      const me = state.players.find((p) => p.name === myName);
+      $('currentRole').innerHTML = me
+        ? `${me.isHost ? '<span class="pill host">host</span>' : 'player'} · ${me.isAlive ? '<span class="pill alive">alive</span>' : '<span class="pill dead">idle</span>'}`
+        : '–';
+
+      const playersEl = $('players');
+      playersEl.innerHTML = '';
+      for (const p of state.players) {
+        const div = document.createElement('div');
+        div.style.fontSize = '11px';
+        div.style.padding = '2px 0';
+        const tags = [];
+        if (p.isHost) tags.push('<span class="pill host">host</span>');
+        tags.push(p.isAlive
+          ? '<span class="pill alive">alive</span>'
+          : '<span class="pill dead">idle</span>');
+        div.innerHTML = `<b>${escapeHtml(p.name)}</b> ${tags.join(' ')} <span style="color:var(--muted)">${p.id.slice(0, 6)}</span>`;
+        playersEl.appendChild(div);
+      }
+
+      $('gWinner').textContent = state.winner ?? '–';
+    }
+
+    function applyGameState(state) {
+      lastGameState = state;
+      $('gStatus').textContent = state.status;
+      $('gAlive').textContent = state.isAlive;
+      $('gPiece').textContent = state.currentPiece
+        ? `${state.currentPiece.type} r${state.currentPiece.rotation} @(${state.currentPiece.x},${state.currentPiece.y})`
+        : 'none';
+
+      // Render board
+      const board = state.board;
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          cellEls[r][c].className = 'cell' + (board[r][c] ? ' c' + board[r][c] : '');
+        }
+      }
+      // Overlay current piece (ghost-style)
+      if (state.currentPiece) {
+        const { matrix, x, y, color } = state.currentPiece;
+        for (let r = 0; r < matrix.length; r++) {
+          for (let c = 0; c < matrix[r].length; c++) {
+            if (!matrix[r][c]) continue;
+            const yy = y + r, xx = x + c;
+            if (yy >= 0 && yy < ROWS && xx >= 0 && xx < COLS) {
+              cellEls[yy][xx].className = 'cell c' + color + ' ghost';
+            }
+          }
+        }
+      }
+
+      // Opponents
+      const oppEl = $('opponents');
+      oppEl.innerHTML = '';
+      for (const o of state.opponents) {
+        const wrap = document.createElement('div');
+        wrap.className = 'opponent';
+        const name = document.createElement('div');
+        name.style.minWidth = '90px';
+        name.style.fontSize = '11px';
+        name.innerHTML = `<b>${escapeHtml(o.name)}</b><br><span style="color:var(--muted)">${o.isAlive ? 'alive' : 'dead'}</span>`;
+        const spec = document.createElement('div');
+        spec.className = 'spectrum';
+        for (const h of o.spectrum) {
+          const col = document.createElement('div');
+          col.className = 'spec-col';
+          col.style.height = (h * 4) + 'px';
+          spec.appendChild(col);
+        }
+        wrap.appendChild(name);
+        wrap.appendChild(spec);
+        oppEl.appendChild(wrap);
+      }
+    }
+  </script>
+</body>
+</html>
