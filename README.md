@@ -154,6 +154,4 @@ There's also a static `backend/socket-test.html` for manual socket exercising.
 - No database / no persistence
 - No secrets in repo
 
-## License
 
-Educational project (42 school).
