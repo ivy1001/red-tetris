@@ -1,0 +1,696 @@
+
+/* =========================================
+   1. GLOBAL RESET
+========================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#tetris {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+body {
+  background: #0b0b0d;
+  color: #f3f4f6;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+
+/* =========================================
+   2. LANDING PAGE
+========================================= */
+
+.landing-page {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: #0b0b0d;
+  color: #f5f5f5;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Background grid */
+
+.landing-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* Red ambient glow */
+
+.landing-page::after {
+  content: '';
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  right: -180px;
+  top: 10%;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    circle,
+    rgba(220, 30, 45, 0.13) 0%,
+    rgba(220, 30, 45, 0.04) 40%,
+    transparent 70%
+  );
+}
+
+
+/* =========================================
+   3. NAVIGATION
+========================================= */
+
+.landing-nav {
+  position: relative;
+  z-index: 5;
+  width: 100%;
+  height: 90px;
+  padding: 0 8%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.landing-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 3px;
+}
+
+.logo-block {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e32636;
+  color: white;
+  font-size: 17px;
+  font-weight: 900;
+  box-shadow: 0 0 20px rgba(227, 38, 54, 0.3);
+}
+
+.landing-nav-links {
+  display: flex;
+  gap: 35px;
+}
+
+.landing-nav-links a {
+  color: #777;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  transition: color 0.2s ease;
+}
+
+.landing-nav-links a:hover {
+  color: #fff;
+}
+
+
+/* =========================================
+   4. MAIN CONTENT
+========================================= */
+
+.landing-main {
+  position: relative;
+  z-index: 3;
+  min-height: calc(100vh - 150px);
+  min-height: calc(100dvh - 150px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 50px 12% 80px;
+}
+
+.landing-tag {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 25px;
+  color: #e32636;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 4px;
+}
+
+.landing-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e32636;
+  box-shadow: 0 0 12px #e32636;
+}
+
+.landing-title {
+  margin: 0;
+  color: #f5f5f5;
+  font-size: clamp(65px, 10vw, 140px);
+  font-weight: 900;
+  line-height: 0.85;
+  letter-spacing: -7px;
+  text-shadow: none;
+}
+
+.landing-title span {
+  color: #e32636;
+}
+
+.landing-description {
+  margin-top: 35px;
+  color: #858585;
+  font-size: 17px;
+  line-height: 1.8;
+  letter-spacing: 0.5px;
+}
+
+
+/* =========================================
+   5. BUTTONS
+========================================= */
+
+.landing-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 35px;
+}
+
+.landing-btn {
+  min-width: 190px;
+  height: 58px;
+  padding: 0 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  transition: all 0.25s ease;
+}
+
+.landing-btn-primary {
+  background: #e32636;
+  color: white;
+  box-shadow: 0 8px 30px rgba(227, 38, 54, 0.2);
+}
+
+.landing-btn-primary:hover {
+  background: #ff3044;
+  transform: translateY(-3px);
+  box-shadow: 0 12px 35px rgba(227, 38, 54, 0.35);
+}
+
+.landing-btn-secondary {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.landing-btn-secondary:hover {
+  border-color: #e32636;
+  color: #e32636;
+  transform: translateY(-3px);
+}
+
+
+/* =========================================
+   6. GAME INFORMATION
+========================================= */
+
+.landing-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 65px;
+  color: #555;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.info-separator {
+  color: #e32636;
+}
+
+
+/* =========================================
+   7. DECORATIVE TETRIS BLOCKS
+========================================= */
+
+.landing-decoration {
+  position: absolute;
+  right: 8%;
+  top: 50%;
+  z-index: 1;
+  width: 350px;
+  height: 350px;
+  transform: translateY(-50%);
+  opacity: 0.65;
+}
+
+.block {
+  position: absolute;
+  display: grid;
+  grid-template-columns: repeat(4, 35px);
+  grid-template-rows: repeat(4, 35px);
+  gap: 3px;
+  transform: rotate(-15deg);
+}
+
+.block span {
+  background: rgba(227, 38, 54, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 20px rgba(227, 38, 54, 0.15);
+}
+
+.block-i {
+  top: 0;
+  right: 30px;
+}
+
+.block-i span:nth-child(1) {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.block-i span:nth-child(2) {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.block-i span:nth-child(3) {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.block-i span:nth-child(4) {
+  grid-column: 1;
+  grid-row: 4;
+}
+
+.block-t {
+  top: 120px;
+  left: 40px;
+}
+
+.block-t span:nth-child(1) {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.block-t span:nth-child(2) {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.block-t span:nth-child(3) {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.block-t span:nth-child(4) {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.block-l {
+  bottom: 10px;
+  right: 20px;
+}
+
+.block-l span:nth-child(1) {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.block-l span:nth-child(2) {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.block-l span:nth-child(3) {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.block-l span:nth-child(4) {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.block-z {
+  bottom: 70px;
+  left: 10px;
+}
+
+.block-z span:nth-child(1) {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.block-z span:nth-child(2) {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.block-z span:nth-child(3) {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.block-z span:nth-child(4) {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+
+/* =========================================
+   8. FOOTER
+========================================= */
+
+.landing-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  z-index: 5;
+  width: 100%;
+  min-height: 60px;
+  padding: 0 8%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: #555;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+
+/* =========================================
+   9. TETRIS GAME
+========================================= */
+
+.game-container {
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: radial-gradient(
+    circle at top,
+    #1b2435 0%,
+    #0b0f17 65%
+  );
+  color: #f3f4f6;
+}
+
+.game-container h1 {
+  margin: 0;
+  color: #00e5ff;
+  font-size: 32px;
+  letter-spacing: 4px;
+  text-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
+}
+
+.board {
+  position: relative;
+  display: grid;
+  grid-template-rows: repeat(20, clamp(18px, 5vmin, 28px));
+  width: max-content;
+  padding: 6px;
+  gap: 2px;
+  background: #0f1724;
+  border: 2px solid #334155;
+  border-radius: 8px;
+  box-shadow: 0 0 25px rgba(0, 229, 255, 0.12);
+  max-width: 95vw;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(10, clamp(18px, 5vmin, 28px));
+  gap: 2px;
+}
+
+.cell,
+.piece {
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.cell.filled,
+.piece.filled {
+  background: #00e5ff;
+  border-color: #7df4ff;
+  box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.25);
+}
+
+.cell.empty {
+  background: #1e293b;
+}
+
+.cell.cyan {
+  background: #00e5ff;
+  border-color: #7df4ff;
+}
+
+.cell.yellow {
+  background: #f5c518;
+  border-color: #ffe680;
+}
+
+.cell.purple {
+  background: #b76bff;
+  border-color: #d9b3ff;
+}
+
+.cell.green {
+  background: #35d07f;
+  border-color: #8ff0bb;
+}
+
+.cell.red {
+  background: #ff4d6d;
+  border-color: #ffa1b0;
+}
+
+.cell.blue {
+  background: #4d7cff;
+  border-color: #a3bcff;
+}
+
+.cell.orange {
+  background: #ff9f43;
+  border-color: #ffd0a3;
+}
+
+.cell.cyan,
+.cell.yellow,
+.cell.purple,
+.cell.green,
+.cell.red,
+.cell.blue,
+.cell.orange {
+  box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.25);
+}
+
+.piece-row {
+  display: flex;
+  gap: 2px;
+}
+
+.game-over {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  background: rgba(11, 15, 23, 0.88);
+  border-radius: 8px;
+  color: #ff4d6d;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.game-over h2 {
+  margin: 0;
+}
+
+.game-over button {
+  padding: 12px 26px;
+  background: #e32636;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.game-over button:hover {
+  background: #ff3044;
+}
+
+
+/* =========================================
+   10. MULTIPLAYER PLACEHOLDER
+========================================= */
+
+.multiplayer-placeholder {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  background: #0b0b0d;
+  color: white;
+}
+
+.multiplayer-placeholder h1 {
+  color: #e32636;
+  text-shadow: none;
+}
+
+.multiplayer-placeholder button {
+  padding: 14px 24px;
+  background: #e32636;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+
+/* =========================================
+   11. RESPONSIVE DESIGN
+========================================= */
+
+@media (max-width: 768px) {
+  .landing-nav {
+    height: 70px;
+    padding: 0 6%;
+  }
+
+  .landing-nav-links {
+    gap: 15px;
+  }
+
+  .landing-nav-links a {
+    font-size: 9px;
+  }
+
+  .landing-main {
+    min-height: calc(100vh - 130px);
+    min-height: calc(100dvh - 130px);
+    padding: 50px 7% 80px;
+  }
+
+  .landing-title {
+    font-size: clamp(60px, 15vw, 100px);
+    letter-spacing: -4px;
+  }
+
+  .landing-description {
+    font-size: 14px;
+  }
+
+  .landing-decoration {
+    right: -100px;
+    opacity: 0.25;
+    transform: translateY(-50%) scale(0.8);
+  }
+
+  .landing-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .landing-btn {
+    width: 100%;
+    max-width: 280px;
+  }
+
+  .landing-info {
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 40px;
+    font-size: 8px;
+  }
+
+  .landing-footer {
+    padding: 0 6%;
+    font-size: 7px;
+    letter-spacing: 1px;
+  }
+}
+
+@media (max-width: 600px) {
+  .board {
+    grid-template-rows: repeat(20, 26px);
+  }
+
+  .row {
+    grid-template-columns: repeat(10, 26px);
+  }
+
+  .landing-logo {
+    font-size: 12px;
+    letter-spacing: 2px;
+  }
+}
+
+@media (min-width: 601px) {
+  .board {
+    grid-template-rows: repeat(20, 24px);
+  }
+
+  .row {
+    grid-template-columns: repeat(10, 24px);
+  }
+}
