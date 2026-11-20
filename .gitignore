@@ -4,3 +4,8 @@
 log
 tmp
 node_modules
+dist
+build
+coverage
+.env
+scores.json
