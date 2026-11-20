@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useParams } from 'react-router-dom'
 import { KEYS, MODES, reset, roomView } from '../game'
-import { socket } from '../socket'
+import { emit } from '../middleware/socket'
 import Cell from './Cell'
 import Controls from './Controls'
 import Logo from './Logo'
@@ -56,14 +56,11 @@ const Room = () => {
   const { server, error } = useSelector((s) => s.game)
   const [mode, setMode] = useState(null)
 
-  // Join now (or once connected), and again after a reconnect; leave on unmount.
+  // Join on mount (the socket middleware re-joins after a reconnect); leave on unmount.
   useEffect(() => {
-    const join = () => socket.emit('join', { room, name })
-    if (socket.connected) join()
-    socket.on('connect', join)
+    dispatch(emit('join', { room, name }))
     return () => {
-      socket.off('connect', join)
-      socket.emit('leave')
+      dispatch(emit('leave'))
       dispatch(reset())
     }
   }, [room, name, dispatch])
@@ -73,11 +70,11 @@ const Room = () => {
       const input = KEYS[e.key]
       if (!input || e.target.tagName === 'BUTTON') return
       e.preventDefault()
-      socket.emit('input', input)
+      dispatch(emit('input', input))
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [dispatch])
 
   if (!server)
     return error ? (
@@ -113,7 +110,7 @@ const Room = () => {
           </section>
           <section>
             <h2>Mode</h2>
-            <p>{MODES[server.mode].label}</p>
+            <p>{MODES[server.mode]?.label}</p>
           </section>
           <Controls />
         </aside>
@@ -127,7 +124,7 @@ const Room = () => {
               {overlay.button && (
                 <>
                   <ModePicker value={picked} onChange={setMode} />
-                  <button className="btn btn-primary" onClick={() => socket.emit('start', picked)}>
+                  <button className="btn btn-primary" onClick={() => dispatch(emit('start', picked))}>
                     {overlay.button}
                   </button>
                 </>

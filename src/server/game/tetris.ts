@@ -42,6 +42,14 @@ export const collides = (board: Board, m: Matrix, x: number, y: number): boolean
 export const dropY = (board: Board, m: Matrix, x: number, y: number): number =>
   collides(board, m, x, y + 1) ? y : dropY(board, m, x, y + 1);
 
+// Highest y <= y where the matrix fits again (the stack rose under it). Rows above the top are
+// free, so once the whole matrix is above the field it stops.
+export const liftY = (board: Board, m: Matrix, x: number, y: number): number =>
+  y < -m.length || !collides(board, m, x, y) ? y : liftY(board, m, x, y - 1);
+
+// True if any block of the matrix is above the top row (locking it there = topped out).
+export const aboveTop = (m: Matrix, y: number): boolean => m.some((row, r) => y + r < 0 && row.some(Boolean));
+
 // Hides locked blocks (invisible mode); penalty rows stay visible.
 export const hideStack = (board: Board): Board => board.map((row) => row.map((c) => (c === PENALTY ? c : EMPTY)));
 

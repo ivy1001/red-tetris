@@ -35,6 +35,16 @@ export const MODES = {
 // Same rule the server enforces for room and player names.
 export const validName = (s) => /^[\w-]{1,20}$/.test(s)
 
+// Old-style hash URL `/#room[player]` -> `/room/player` (null if it isn't one).
+export const hashRoute = (hash) => {
+  try {
+    const m = /^#([\w-]{1,20})\[([\w-]{1,20})\]$/.exec(decodeURIComponent(hash))
+    return m ? `/${m[1]}/${m[2]}` : null
+  } catch {
+    return null // malformed %-escape
+  }
+}
+
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`
 
 // What the room screen shows, derived from the server state.

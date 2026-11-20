@@ -46,7 +46,7 @@ export class GameGateway implements OnGatewayDisconnect {
     const game = this.games.get(socket.data.room);
     if (!game) return fail('Join a room first');
     try {
-      game.start(socket.id, mode && mode in MODES ? mode : 'classic');
+      game.start(socket.id, typeof mode === 'string' && Object.hasOwn(MODES, mode) ? mode : 'classic');
     } catch (e) {
       if (e instanceof GameError) return fail(e.message);
       throw e;

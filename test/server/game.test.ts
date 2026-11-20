@@ -5,6 +5,8 @@ import { Player } from '../../src/server/game/player';
 import {
   EMPTY,
   GHOST,
+  aboveTop,
+  liftY,
   PENALTY,
   POINTS,
   ROWS,
@@ -290,5 +292,33 @@ describe('bonus: ghost, invisible, preview, scoring, modes', () => {
     b.board[19][0] = 'red';
     expect(game.stateFor('2').board![19][0]).toBe(EMPTY);
     game.stop();
+  });
+});
+
+describe('topping out', () => {
+  it('pure helpers: liftY and aboveTop', () => {
+    const board = emptyBoard();
+    board[1][4] = 'red';
+    expect(liftY(board, SHAPES.O.matrix, 4, 1)).toBe(-1);
+    expect(liftY(board, SHAPES.O.matrix, 0, 5)).toBe(5);
+    board[0][4] = 'red';
+    expect(liftY(board, SHAPES.O.matrix, 4, 1)).toBe(-2); // gave up: fully above the field
+    expect(aboveTop(SHAPES.O.matrix, -1)).toBe(true);
+    expect(aboveTop(SHAPES.I.matrix, -1)).toBe(false); // I's top row is empty
+  });
+
+  it('a piece locked partly above the field ends that player', () => {
+    vi.useFakeTimers();
+    const game = new Game('room', () => {});
+    const a = game.addPlayer('1', 'a');
+    game.start('1');
+    a.board[0] = fullRowExcept(4, 5);
+    a.board[1] = fullRowExcept(4, 5);
+    a.piece = new Piece('O', SHAPES.O.matrix, 0, -2); // resting on top of the pile, above the field
+    vi.advanceTimersByTime(500);
+    expect(a.alive).toBe(false);
+    expect(game.status).toBe('ended');
+    game.stop();
+    vi.useRealTimers();
   });
 });

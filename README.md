@@ -11,6 +11,9 @@ npm run client-dev           # client with hot reload (:5173, proxies sockets to
 npm run coverage             # vitest, fails under 70% stmts/funcs/lines, 50% branches
 ```
 
+Game URLs: `/<room>/<player_name>` or the hash form `/#<room>[<player_name>]`.
+Full walkthrough, workflows and evaluation notes: [GUIDE.md](GUIDE.md).
+
 The server serves `build/` (`index.html`, `bundle.js`, `index.css`), and `index.html` for any other GET
 so the client router handles `/<room>/<player_name>`.
 
@@ -19,7 +22,8 @@ so the client router handles `/<room>/<player_name>`.
 The server is authoritative: it owns boards, the shared piece sequence, gravity (500 ms tick),
 collisions, line clears, penalties, game over and the winner (`src/server/game`: pure board functions
 in `tetris.ts`, `Piece` / `Player` / `Game` classes). The client only sends key inputs and renders the
-`state` it receives (no `this`, function components + hooks).
+`state` it receives (no `this`, function components + hooks). All socket.io use is wrapped in a
+Redux middleware (`src/client/middleware/socket.js`).
 
 ## Protocol (socket.io)
 

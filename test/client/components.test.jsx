@@ -1,15 +1,19 @@
 // @vitest-environment jsdom
 import React from 'react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { Provider } from 'react-redux'
 import { MemoryRouter } from 'react-router-dom'
 import { configureStore } from '@reduxjs/toolkit'
-import game, { serverError, serverScores, serverState } from '../../src/client/game'
+import game from '../../src/client/game'
+import { socketMiddleware } from '../../src/client/middleware/socket'
 import App from '../../src/client/App'
 
-const socket = vi.hoisted(() => ({ connected: true, emit: vi.fn(), on: vi.fn(), off: vi.fn() }))
-vi.mock('../../src/client/socket', () => ({ socket }))
+// A fake socket: records emits, and lets a test fire server events through the real middleware.
+const fakeSocket = (connected) => {
+  const handlers = {}
+  return { connected, handlers, emit: vi.fn(), on: vi.fn((event, fn) => (handlers[event] = fn)) }
+}
 
 const emptyBoard = Array.from({ length: 20 }, () => Array(10).fill('empty'))
 const serverStateFor = (over = {}) => ({
@@ -31,9 +35,10 @@ const serverStateFor = (over = {}) => ({
   ...over,
 })
 
-let store
-const renderAt = (path) => {
-  store = configureStore({ reducer: { game } })
+let socket
+const renderAt = (path, connected = true) => {
+  socket = fakeSocket(connected)
+  const store = configureStore({ reducer: { game }, middleware: (getDefault) => getDefault().concat(socketMiddleware(socket)) })
   return render(
     <Provider store={store}>
       <MemoryRouter initialEntries={[path]}>
@@ -42,17 +47,21 @@ const renderAt = (path) => {
     </Provider>
   )
 }
+const server = (event, data) => act(() => socket.handlers[event](data))
+const emitted = (event) => socket.emit.mock.calls.filter(([e]) => e === event)
 const type = (label, value) => fireEvent.change(screen.getByLabelText(label), { target: { value } })
 
-beforeEach(() => vi.clearAllMocks())
 afterEach(cleanup)
 
 describe('LandingPage', () => {
   it('asks for the best scores and lists them', () => {
     renderAt('/')
-    expect(socket.emit).toHaveBeenCalledWith('scores')
+    expect(socket.emit).toHaveBeenCalledWith('scores', undefined)
     expect(screen.getByText(/No scores yet/)).toBeTruthy()
-    act(() => store.dispatch(serverScores([{ name: 'ana', score: 1200, mode: 'gravity', date: 'd' }, { name: 'x', score: 1, mode: 'odd', date: 'd' }])))
+    server('scores', [
+      { name: 'ana', score: 1200, mode: 'gravity', date: 'd' },
+      { name: 'x', score: 1, mode: 'odd', date: 'd' },
+    ])
     expect(screen.getByText('ana')).toBeTruthy()
     expect(screen.getByText('High gravity')).toBeTruthy()
     expect(screen.getByText('odd')).toBeTruthy()
@@ -79,6 +88,11 @@ describe('LandingPage', () => {
     expect(socket.emit).toHaveBeenCalledWith('join', { room: expect.stringMatching(/^solo-/), name: 'alice' })
   })
 
+  it('accepts the hash URL form /#room[player]', () => {
+    renderAt('/#r[alice]')
+    expect(socket.emit).toHaveBeenCalledWith('join', { room: 'r', name: 'alice' })
+  })
+
   it('redirects unknown routes home', () => {
     renderAt('/a/b/c')
     expect(screen.getByText('Play solo')).toBeTruthy()
@@ -86,39 +100,41 @@ describe('LandingPage', () => {
 })
 
 describe('Room', () => {
-  it('waits for the connection before joining, and re-joins on reconnect', () => {
-    socket.connected = false
-    renderAt('/r/alice')
-    expect(socket.emit).not.toHaveBeenCalled()
+  it('joins once connected, re-joins after a reconnect, and stops after leaving', () => {
+    const { unmount } = renderAt('/r/alice', false)
+    expect(emitted('join')).toEqual([])
     expect(screen.getByText('Connecting')).toBeTruthy()
-    const [event, join] = socket.on.mock.calls[0]
-    expect(event).toBe('connect')
-    join()
-    expect(socket.emit).toHaveBeenCalledWith('join', { room: 'r', name: 'alice' })
-    socket.connected = true
+    socket.handlers.connect()
+    socket.handlers.connect()
+    expect(emitted('join')).toEqual([
+      ['join', { room: 'r', name: 'alice' }],
+      ['join', { room: 'r', name: 'alice' }],
+    ])
+    unmount()
+    expect(socket.emit).toHaveBeenCalledWith('leave', undefined)
+    socket.handlers.connect()
+    expect(emitted('join')).toHaveLength(2)
   })
 
   it('shows join errors', () => {
     renderAt('/r/alice')
-    act(() => store.dispatch(serverError({ message: 'Name "alice" is taken in this room' })))
+    server('game_error', { message: 'Name "alice" is taken in this room' })
     expect(screen.getByText("Can't join the room")).toBeTruthy()
     expect(screen.getByText(/is taken/)).toBeTruthy()
   })
 
   it('lets the host pick a mode and start', () => {
     renderAt('/r/alice')
-    act(() => store.dispatch(serverState(serverStateFor())))
+    server('state', serverStateFor())
     expect(screen.getByText('Classic', { selector: 'button' }).getAttribute('aria-pressed')).toBe('true')
     fireEvent.click(screen.getByText('High gravity'))
     fireEvent.click(screen.getByText('Start game'))
     expect(socket.emit).toHaveBeenCalledWith('start', 'gravity')
   })
 
-  it('renders board, next piece, score and opponents; sends keys; leaves on unmount', () => {
-    const { container, unmount } = renderAt('/r/alice')
-    act(() =>
-      store.dispatch(serverState(serverStateFor({ status: 'playing', score: 340, next: [['purple', 'purple', 'purple']] })))
-    )
+  it('renders board, next piece, score and opponents, and sends keys', () => {
+    const { container } = renderAt('/r/alice')
+    server('state', serverStateFor({ status: 'playing', score: 340, next: [['purple', 'purple', 'purple']] }))
     expect(container.querySelectorAll('.board .cell')).toHaveLength(200)
     expect(container.querySelectorAll('.preview .cell.purple')).toHaveLength(3)
     expect(screen.getByText('340')).toBeTruthy()
@@ -129,22 +145,18 @@ describe('Room', () => {
 
     fireEvent.keyDown(window, { key: 'ArrowLeft' })
     fireEvent.keyDown(window, { key: 'a' })
-    expect(socket.emit.mock.calls.filter(([e]) => e === 'input')).toEqual([['input', 'left']])
+    expect(emitted('input')).toEqual([['input', 'left']])
 
-    act(() => store.dispatch(serverError({ message: 'Only the host can start the game' })))
+    server('game_error', { message: 'Only the host can start the game' })
     expect(screen.getByRole('alert').textContent).toBe('Only the host can start the game')
-
-    unmount()
-    expect(socket.emit).toHaveBeenCalledWith('leave')
-    expect(socket.off).toHaveBeenCalledWith('connect', expect.any(Function))
   })
 
   it('ignores keys pressed on a focused button and shows the solo hint', () => {
     const { container } = renderAt('/r/alice')
-    act(() => store.dispatch(serverState(serverStateFor({ players: [serverStateFor().players[0]] }))))
+    server('state', serverStateFor({ players: [serverStateFor().players[0]] }))
     expect(screen.getByText(/Nobody else here/)).toBeTruthy()
     expect(container.querySelector('.preview-empty')).toBeTruthy()
     fireEvent.keyDown(screen.getByText('Start game'), { key: ' ' })
-    expect(socket.emit.mock.calls.filter(([e]) => e === 'input')).toEqual([])
+    expect(emitted('input')).toEqual([])
   })
 })

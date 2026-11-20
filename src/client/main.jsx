@@ -3,16 +3,17 @@ import { createRoot } from 'react-dom/client'
 import { Provider } from 'react-redux'
 import { BrowserRouter } from 'react-router-dom'
 import { configureStore } from '@reduxjs/toolkit'
-import game, { serverState, serverError, serverScores } from './game'
-import { socket } from './socket'
+import { io } from 'socket.io-client'
+import game from './game'
+import { socketMiddleware } from './middleware/socket'
 import App from './App'
 import './style.css'
 
-const store = configureStore({ reducer: { game } })
-
-socket.on('state', (s) => store.dispatch(serverState(s)))
-socket.on('game_error', (e) => store.dispatch(serverError(e)))
-socket.on('scores', (s) => store.dispatch(serverScores(s)))
+// Same origin as the page: the Nest server serves both (Vite proxies /socket.io in dev).
+const store = configureStore({
+  reducer: { game },
+  middleware: (getDefault) => getDefault().concat(socketMiddleware(io())),
+})
 
 createRoot(document.getElementById('tetris')).render(
   <Provider store={store}>

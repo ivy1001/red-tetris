@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { MODES, validName } from '../game'
-import { socket } from '../socket'
+import { emit } from '../middleware/socket'
 import Controls from './Controls'
 import Logo from './Logo'
 
@@ -30,13 +30,14 @@ const Field = ({ id, label, hint, value, onChange }) => {
 
 const LandingPage = () => {
   const navigate = useNavigate()
+  const dispatch = useDispatch()
   const scores = useSelector((s) => s.game.scores)
   const [name, setName] = useState('')
   const [room, setRoom] = useState('')
 
   useEffect(() => {
-    socket.emit('scores')
-  }, [])
+    dispatch(emit('scores'))
+  }, [dispatch])
 
   const playSolo = () => navigate(`/solo-${Math.random().toString(36).slice(2, 8)}/${name}`)
   const joinRoom = (e) => {

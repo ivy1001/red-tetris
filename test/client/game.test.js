@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import reducer, { KEYS, MODES, reset, roomView, serverError, serverScores, serverState, validName } from '../../src/client/game'
+import reducer, { KEYS, MODES, hashRoute, reset, roomView, serverError, serverScores, serverState, validName } from '../../src/client/game'
 
 const state = (over = {}) => ({
   room: 'r',
@@ -35,6 +35,14 @@ describe('game reducer', () => {
     expect(validName('ab_c-1')).toBe(true)
     expect(validName('')).toBe(false)
     expect(validName('a/b')).toBe(false)
+  })
+
+  it('reads the hash URL form', () => {
+    expect(hashRoute('#room1[alice]')).toBe('/room1/alice')
+    expect(hashRoute('#room1%5Balice%5D')).toBe('/room1/alice')
+    expect(hashRoute('')).toBeNull()
+    expect(hashRoute('#room1')).toBeNull()
+    expect(hashRoute('#%E0%A4%A')).toBeNull()
   })
 })
 

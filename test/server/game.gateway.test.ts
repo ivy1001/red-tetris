@@ -89,6 +89,13 @@ describe('GameGateway', () => {
     game.status = 'ended';
     gw.start(s, 'nope' as never);
     expect(game.mode).toBe('classic');
+    for (const bad of ['toString', '__proto__', { a: 1 }]) {
+      game.stop();
+      game.status = 'ended';
+      gw.start(s, bad as never);
+      expect(game.mode).toBe('classic');
+    }
+    game.stop();
   });
 
   it('records scores when a round ends and serves the best scores', () => {

@@ -3,12 +3,14 @@ import {
   Board,
   GHOST,
   PieceType,
+  aboveTop,
   addPenalty,
   clearLines,
   collides,
   dropY,
   emptyBoard,
   hideStack,
+  liftY,
   merge,
   spectrum,
 } from './tetris';
@@ -60,9 +62,11 @@ export class Player {
   }
 
   // Merges the piece into the board; returns the number of lines cleared.
+  // Locking with blocks above the top means the pile left the field: the player is out.
   lock(): number {
     if (!this.piece) return 0;
     const { matrix, x, y, color } = this.piece;
+    if (aboveTop(matrix, y)) this.alive = false;
     const result = clearLines(merge(this.board, matrix, x, y, color));
     this.board = result.board;
     this.piece = null;
@@ -80,7 +84,8 @@ export class Player {
     this.board = result.board;
     if (result.overflow) this.alive = false;
     // The stack rose under the falling piece: push the piece up with it.
-    while (this.alive && this.piece && !this.fits(this.piece)) this.piece = this.piece.moved(0, -1);
+    const p = this.piece;
+    if (this.alive && p) this.piece = p.moved(0, liftY(this.board, p.matrix, p.x, p.y) - p.y);
   }
 
   // What the client renders: board + ghost + falling piece. Invisible mode hides the stack and the ghost.
